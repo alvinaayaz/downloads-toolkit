@@ -1,0 +1,4 @@
+moves.log
+duplicates.log
+__pycache__/
+*.pyc
