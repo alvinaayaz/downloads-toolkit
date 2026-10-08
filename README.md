@@ -1,8 +1,8 @@
 # downloads-toolkit
 
-Two small Python scripts that clean up a messy Downloads folder, with a way back built in.
+Three small Python scripts that clean up a messy Downloads folder and show where the space went, with a way back built in.
 
-My Downloads folder had 463 files in it. Version 1 of the sorter had no undo and moved project files I didn't want touched. Nothing was lost, but fixing it by hand was painful. So both scripts here log every move and can undo the last run.
+My Downloads folder had 463 files in it. Version 1 of the sorter had no undo and moved project files I didn't want touched. Nothing was lost, but fixing it by hand was painful. So all three scripts here log every move and can undo the last run.
 
 Built with AI's help. No installs needed, just Python 3.8+.
 
@@ -12,13 +12,14 @@ Built with AI's help. No installs needed, just Python 3.8+.
 |---|---|
 | `organize_downloads.py` | Sorts loose files into folders by type (Images, PDFs, Documents, Spreadsheets, Videos, Audio, Archives, Installers, Code, Other) |
 | `find_duplicates.py` | Finds files with identical content (by hash, not by name) and moves the extra copies into a `Duplicates` folder |
+| `downloads_report.py` | Shows where the space went (size per folder, biggest files) and moves installers older than 30 days into a `Review` folder |
 
-Neither script deletes anything.
+None of the scripts delete anything.
 
 ## Safety
 
-- **Preview first.** Without `--run`, both scripts only show what they would do.
-- **Undo.** Every `--run` is written to a log next to the script (`moves.log`, `duplicates.log`). `--undo` reverses the last run. Run it again to go back one more.
+- **Preview first.** Without `--run`, all three scripts only show what they would do.
+- **Undo.** Every `--run` is written to a log next to the script (`moves.log`, `duplicates.log`, `review.log`). `--undo` reverses the last run. Run it again to go back one more.
 - **Never overwrites.** If a name is taken, the file gets `(1)`, `(2)`, ... added.
 - **Project-aware.** Files like `package.json`, `Dockerfile`, `requirements.txt`, `docker-compose.yml`, README/LICENSE files and `.env*` are left alone. So are `.ini`, `.lnk`, `.log`, hidden files, and unfinished downloads (`.crdownload`, `.part`, `.tmp`). Folders are never moved. The skip list is at the top of each script, so you can edit it.
 - **Recent files are skipped.** `organize_downloads.py` ignores files newer than 30 minutes (`--min-age`), so a download in progress isn't touched.
@@ -49,6 +50,19 @@ Files named `Resume (1)`, `Resume (2)`, ... are not necessarily copies. In my ow
 
 Read the preview before using `--run`. If a "KEEP" file isn't the one you want, don't run it for that group.
 
+## downloads_report.py
+
+```
+python downloads_report.py                    # report only
+python downloads_report.py --run              # move old installers to Downloads\Review
+python downloads_report.py --undo             # put the last run back
+python downloads_report.py --days 60          # what counts as "old" (default 30)
+```
+
+The report shows total size, size per folder, the 10 biggest files, and installers older than `--days` (`.exe`, `.msi`, `.dmg`, `.pkg`, `.deb`, `.apk`). `--run` moves only those installers into a `Review` folder. Files already in `Duplicates` or `Review` are never picked up.
+
+Age is counted from when the file was created (downloaded) on Windows, and from last modified elsewhere. Some old installers can't be downloaded again (old versions, dead links), so read the list before using `--run`. Delete the `Review` folder yourself once you're sure.
+
 ## Run it every day (Windows)
 
 Find your pythonw path:
@@ -69,17 +83,18 @@ Notes:
   ```
   powershell -Command "$s = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable; Set-ScheduledTask -TaskName 'OrganizeDownloads' -Settings $s"
   ```
-- Don't schedule `find_duplicates.py`. Deciding what counts as a duplicate is better done by looking at the preview once.
+- Don't schedule `find_duplicates.py` or `downloads_report.py --run`. Deciding what counts as a duplicate or an old installer is better done by looking at the list once.
 
 ## Tested on
 
-Windows 10 with Python 3.12 (real Downloads folder, including a scheduled run and undo of both scripts). The logic was also tested on Linux. macOS should work but I haven't tried it.
+Windows 10 with Python 3.12, on a real Downloads folder. `organize_downloads.py`: a scheduled run, and undo on a few test files. `find_duplicates.py`: undo of 96 files. `downloads_report.py`: undo of 13 installers. The logic was also tested on Linux. macOS should work but I haven't tried it.
 
 ## Known limits
 
 - Sorting is by file extension only, so it can't tell that `config.py` belongs to a project. That's what the skip list is for.
 - Undo reverses the most recent run only, and only if the files are still where the script put them.
 - If a file is open in another program, the move is skipped and reported.
+- `downloads_report.py` only looks at the top of the folder and the category folders, not project folders.
 
 ## License
 
