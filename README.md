@@ -6,6 +6,8 @@ My Downloads folder had 463 files in it. Version 1 of the sorter had no undo and
 
 Built with AI's help. No installs needed, just Python 3.8+.
 
+**Try the duplicate finder in your browser:** https://alvinaayaz.github.io/downloads-toolkit/ . Pick a folder and it lists exact copies. Nothing is uploaded, and it only reports (it can't move or delete files).
+
 ## What's in here
 
 | Script | What it does |
@@ -13,6 +15,7 @@ Built with AI's help. No installs needed, just Python 3.8+.
 | `organize_downloads.py` | Sorts loose files into folders by type (Images, PDFs, Documents, Spreadsheets, Videos, Audio, Archives, Installers, Code, Other) |
 | `find_duplicates.py` | Finds files with identical content (by hash, not by name) and moves the extra copies into a `Duplicates` folder |
 | `downloads_report.py` | Shows where the space went (size per folder, biggest files) and moves installers older than 30 days into a `Review` folder |
+| `docs/index.html` | Browser version of the duplicate finder. Reports only, nothing is uploaded |
 
 None of the scripts delete anything.
 
@@ -88,6 +91,15 @@ Notes:
 ## Tested on
 
 Windows 10 with Python 3.12, on a real Downloads folder. `organize_downloads.py`: a scheduled run, and undo on a few test files. `find_duplicates.py`: undo of 96 files. `downloads_report.py`: undo of 13 installers. The logic was also tested on Linux. macOS should work but I haven't tried it.
+
+## Browser version
+
+`docs/index.html` is one HTML file with no dependencies, served with GitHub Pages. Choose a folder and it compares file contents (SHA-256) inside your browser, then lists the exact copies and the space they waste. It also tells you when a file has a name like `(1)` or `Copy` but different contents.
+
+- It skips hidden files, empty files, `.git` and `node_modules`, and files under 1 KB by default (you can change that).
+- Files over 600 MB are skipped, because the browser has to read a whole file to hash it.
+- Folder picking works best in Chrome or Edge on a computer. Some mobile browsers only let you pick files.
+- It never moves or deletes anything. Use `find_duplicates.py` for that.
 
 ## Known limits
 

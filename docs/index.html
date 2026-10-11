@@ -154,7 +154,7 @@ $('in').addEventListener('change',async ev=>{
 function render(r){
   $('s1').textContent=r.scanned;$('s2').textContent=r.copies;$('s3').textContent=fmt(r.wasted);
   const parts=[];
-  if(r.lookalike)parts.push(r.lookalike+' file'+(r.lookalike>1?'s':'')+' have names like "(1)" or "Copy" but different contents. Not copies.');
+  if(r.lookalike)parts.push(r.lookalike+' file'+(r.lookalike>1?'s have':' has')+' a name like "(1)" or "Copy" but different contents. Not '+(r.lookalike>1?'copies':'a copy')+'.');
   if(r.tooBig)parts.push(r.tooBig+' file'+(r.tooBig>1?'s were':' was')+' over '+Math.round(CAP/1048576)+' MB and skipped.');
   if(!r.groups.length)parts.unshift('No exact duplicates found. Nice and tidy.');
   $('hook').textContent=parts.join(' ');
