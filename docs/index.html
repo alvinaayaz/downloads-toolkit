@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>duplicate finder</title>
+<style>
+:root{--bg:#f6f4ef;--fg:#1d1a16;--card:#fff;--line:#e3ddd0;--accent:#2f6fed;--muted:#7a7365;--ok:#1a9b5a;--warn:#c7771a;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15130f;--fg:#f1ebe0;--card:#201d17;--line:#38332a;--accent:#6b9bff;--muted:#a39a8a;--ok:#3cc884;--warn:#f0a850}}
+:root[data-theme="dark"]{--bg:#15130f;--fg:#f1ebe0;--card:#201d17;--line:#38332a;--accent:#6b9bff;--muted:#a39a8a;--ok:#3cc884;--warn:#f0a850}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.45}
+main{max-width:680px;margin:0 auto;padding:22px 16px 48px}
+h1{font-size:1.6rem;margin:0;letter-spacing:-.02em}
+.sub{color:var(--muted);margin:4px 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.pick{display:block;text-align:center;background:var(--accent);color:#fff;border-radius:12px;padding:14px;font-weight:700;font-size:1.05rem;cursor:pointer}
+.pick input{display:none}
+.note{color:var(--muted);font-size:.85rem;margin-top:10px;text-align:center}
+.bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:12px;display:none}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .15s}
+#status{margin-top:10px;font-size:.9rem;color:var(--muted);min-height:1.2em}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stat b{display:block;font-size:1.6rem}
+.stat span{font-size:.78rem;color:var(--muted)}
+.hook{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line);font-size:.92rem}
+h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 10px}
+.grp{border-top:1px solid var(--line);padding:10px 0;font-size:.9rem}
+.grp:first-of-type{border-top:0}
+.row{display:flex;gap:8px;align-items:baseline;word-break:break-all;margin:2px 0}
+.tag{flex:none;font-size:.68rem;font-weight:700;border-radius:99px;padding:1px 8px;border:1px solid var(--line)}
+.keep{color:var(--ok);border-color:var(--ok)}
+.dup{color:var(--warn);border-color:var(--warn)}
+.sz{margin-left:auto;flex:none;color:var(--muted);font-size:.8rem;padding-left:8px}
+button{font:inherit;cursor:pointer}
+.btn{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:10px;padding:8px 14px;font-size:.9rem}
+textarea{width:100%;height:110px;margin-top:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:10px;padding:10px;font:12px ui-monospace,Menlo,Consolas,monospace;display:none}
+.hide{display:none}
+</style>
+</head>
+<body>
+<main>
+<h1>🔍 duplicate finder</h1>
+<p class="sub">file names lie. file contents don't.</p>
+
+<div class="card">
+<label class="pick">Choose a folder<input id="in" type="file" webkitdirectory multiple></label>
+<div class="note">Nothing is uploaded. Files are read and compared inside your browser.</div>
+<div class="note">Ignore files smaller than
+<select id="min"><option value="0">0 (everything)</option><option value="1024" selected>1 KB</option><option value="102400">100 KB</option><option value="1048576">1 MB</option></select></div>
+<div class="bar" id="bar"><i id="fill"></i></div>
+<div id="status"></div>
+</div>
+
+<div id="out" class="hide">
+<div class="card">
+<div class="stats">
+<div class="stat"><b id="s1">0</b><span>files scanned</span></div>
+<div class="stat"><b id="s2">0</b><span>exact copies</span></div>
+<div class="stat"><b id="s3">0 B</b><span>wasted space</span></div>
+</div>
+<div class="hook" id="hook"></div>
+</div>
+<div class="card">
+<h2>Duplicate groups</h2>
+<div id="groups"></div>
+<div style="margin-top:12px"><button class="btn" id="copy">Copy report</button></div>
+<textarea id="rep" readonly></textarea>
+</div>
+<div class="note">This page only reports. It never moves or deletes anything.<br>Duplicates are decided by SHA-256 of the full file contents.</div>
+</div>
+</main>
+<script>
+// ==core==
+const CAP = 600 * 1024 * 1024;
+const COPY = /(\s\(\d+\)|\s-\sCopy|\scopy(\s\d+)?)$/i;
+function stemOf(n){const i=n.lastIndexOf('.');return i>0?n.slice(0,i):n}
+function looksCopy(n){return COPY.test(stemOf(n))}
+function fmt(n){const u=['B','KB','MB','GB'];let i=0;while(n>=1024&&i<3){n/=1024;i++}return (i?n.toFixed(1):Math.round(n))+' '+u[i]}
+async function sha(file){
+  const b=await file.arrayBuffer();
+  const h=await crypto.subtle.digest('SHA-256',b);
+  return Array.from(new Uint8Array(h),x=>x.toString(16).padStart(2,'0')).join('');
+}
+function keepFirst(g){
+  return g.slice().sort((a,b)=>(looksCopy(a.name)-looksCopy(b.name))||(a.name.length-b.name.length)||(a.mtime-b.mtime));
+}
+// items: [{name,path,size,mtime,file}]
+async function analyze(items,onProgress,hasher,opts){
+  hasher=hasher||sha;
+  const min=(opts&&opts.min)||0;
+  const sk={dev:0,hidden:0,empty:0,tiny:0};
+  const isDev=p=>{const s=p.split('/');return s.includes('node_modules')||s.includes('.git')};
+  const used=[];
+  for(const i of items){
+    if(isDev(i.path))sk.dev++;
+    else if(i.name.startsWith('.'))sk.hidden++;
+    else if(i.size===0)sk.empty++;
+    else if(i.size<min)sk.tiny++;
+    else used.push(i);
+  }
+  const bySize=new Map();
+  for(const i of used){if(!bySize.has(i.size))bySize.set(i.size,[]);bySize.get(i.size).push(i)}
+  const cand=[].concat(...[...bySize.values()].filter(g=>g.length>1));
+  const hashable=cand.filter(i=>i.size<=CAP);
+  const tooBig=cand.length-hashable.length;
+  const byHash=new Map();
+  let done=0;
+  for(const i of hashable){
+    let h;try{h=await hasher(i.file)}catch(e){h=null}
+    if(h){if(!byHash.has(h))byHash.set(h,[]);byHash.get(h).push(i)}
+    done++;if(onProgress)onProgress(done,hashable.length);
+  }
+  const groups=[...byHash.values()].filter(g=>g.length>1).map(keepFirst);
+  const dupSet=new Set([].concat(...groups));
+  let copies=0,wasted=0;
+  for(const g of groups){for(const d of g.slice(1)){copies++;wasted+=d.size}}
+  groups.sort((a,b)=>(b[0].size*(b.length-1))-(a[0].size*(a.length-1)));
+  const lookalike=used.filter(i=>looksCopy(i.name)&&!dupSet.has(i)).length;
+  return {scanned:used.length,groups,copies,wasted,tooBig,lookalike,skipped:sk,min};
+}
+// ==end core==
+
+const $=id=>document.getElementById(id);
+function el(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+
+$('in').addEventListener('change',async ev=>{
+  const files=Array.from(ev.target.files||[]);
+  if(!files.length)return;
+  $('out').classList.add('hide');
+  $('bar').style.display='block';$('fill').style.width='0%';
+  $('status').textContent='Reading '+files.length+' files…';
+  const items=files.map(f=>({name:f.name,path:f.webkitRelativePath||f.name,size:f.size,mtime:f.lastModified,file:f}));
+  const r=await analyze(items,(d,t)=>{
+    $('fill').style.width=(t?d/t*100:100)+'%';
+    $('status').textContent='Comparing contents: '+d+' / '+t;
+  },undefined,{min:+$('min').value});
+  $('bar').style.display='none';
+  const k=r.skipped,sp=[];
+  if(k.dev)sp.push(k.dev+' inside node_modules/.git');
+  if(k.hidden)sp.push(k.hidden+' hidden');
+  if(k.empty)sp.push(k.empty+' empty');
+  if(k.tiny)sp.push(k.tiny+' under '+fmt(r.min));
+  const root=(files[0].webkitRelativePath||'').split('/')[0];
+  let msg=(root?'Folder "'+root+'": ':'')+'Done. You selected '+files.length+' file'+(files.length===1?'':'s')+'; compared '+r.scanned+(sp.length?'. Skipped: '+sp.join(', ')+'.':'.');
+  if(files.every(f=>!f.webkitRelativePath))msg+=' Your browser picked files, not a folder. Try Chrome or Edge on a computer.';
+  if(files.length<=6)msg+=' Files seen: '+files.map(f=>f.webkitRelativePath||f.name).join(', ')+'.';
+  $('status').textContent=msg;
+  render(r);
+});
+
+function render(r){
+  $('s1').textContent=r.scanned;$('s2').textContent=r.copies;$('s3').textContent=fmt(r.wasted);
+  const parts=[];
+  if(r.lookalike)parts.push(r.lookalike+' file'+(r.lookalike>1?'s':'')+' have names like "(1)" or "Copy" but different contents. Not copies.');
+  if(r.tooBig)parts.push(r.tooBig+' file'+(r.tooBig>1?'s were':' was')+' over '+Math.round(CAP/1048576)+' MB and skipped.');
+  if(!r.groups.length)parts.unshift('No exact duplicates found. Nice and tidy.');
+  $('hook').textContent=parts.join(' ');
+  const box=$('groups');box.innerHTML='';
+  const lines=[];
+  r.groups.forEach(g=>{
+    const d=el('div','grp');
+    g.forEach((f,i)=>{
+      const row=el('div','row');
+      row.appendChild(el('span','tag '+(i?'dup':'keep'),i?'copy':'keep'));
+      row.appendChild(el('span',null,f.path));
+      row.appendChild(el('span','sz',fmt(f.size)));
+      d.appendChild(row);
+      lines.push((i?'  copy  ':'KEEP  ')+f.path+'  ('+fmt(f.size)+')');
+    });
+    box.appendChild(d);lines.push('');
+  });
+  lines.unshift(r.copies+' exact copies in '+r.groups.length+' groups, '+fmt(r.wasted)+' wasted ('+r.scanned+' files scanned)','');
+  $('rep').value=lines.join('\n');
+  $('out').classList.remove('hide');
+}
+
+$('copy').addEventListener('click',async()=>{
+  const ta=$('rep');ta.style.display='block';
+  try{await navigator.clipboard.writeText(ta.value);$('copy').textContent='Copied ✓'}
+  catch(e){ta.select();try{document.execCommand('copy');$('copy').textContent='Copied ✓'}catch(_){$('copy').textContent='Select the text below and copy'}}
+  setTimeout(()=>{$('copy').textContent='Copy report'},2000);
+});
+</script>
+</body>
+</html>
