@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>downloads-toolkit</title>
+<meta name="description" content="three python scripts for a messy Downloads folder: sort files by type, find exact copies by content, and see where the space went. every move is logged and can be undone.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="downloads-toolkit">
+<meta property="og:title" content="downloads-toolkit: three scripts for a messy Downloads folder">
+<meta property="og:description" content="sort files by type, find exact copies by content, and see where the space went. every move is logged and can be undone.">
+<meta property="og:url" content="https://alvinaayaz.github.io/downloads-toolkit/scripts/">
+<meta property="og:image" content="https://alvinaayaz.github.io/downloads-toolkit/scripts/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="downloads-toolkit: organize_downloads.py, find_duplicates.py, downloads_report.py">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="downloads-toolkit: three scripts for a messy Downloads folder">
+<meta name="twitter:description" content="sort files by type, find exact copies by content, and see where the space went. every move is logged and can be undone.">
+<meta name="twitter:image" content="https://alvinaayaz.github.io/downloads-toolkit/scripts/og-image.png">
+<meta name="twitter:image:alt" content="downloads-toolkit: organize_downloads.py, find_duplicates.py, downloads_report.py">
+<style>
+:root{--bg:#f6f4ef;--fg:#1d1a16;--card:#fff;--line:#e3ddd0;--accent:#2f6fed;--muted:#7a7365;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15130f;--fg:#f1ebe0;--card:#201d17;--line:#38332a;--accent:#6b9bff;--muted:#a39a8a}}
+:root[data-theme="dark"]{--bg:#15130f;--fg:#f1ebe0;--card:#201d17;--line:#38332a;--accent:#6b9bff;--muted:#a39a8a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5}
+main{max-width:680px;margin:0 auto;padding:28px 16px 48px}
+h1{font-size:1.8rem;margin:0;letter-spacing:-.02em}
+.sub{color:var(--muted);margin:6px 0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+h2{font-size:1rem;margin:0 0 4px;font-family:ui-monospace,Menlo,Consolas,monospace}
+.card p{margin:0 0 10px;color:var(--muted);font-size:.95rem}
+pre{margin:0;padding:10px 12px;background:var(--bg);border:1px solid var(--line);border-radius:10px;overflow-x:auto;font:13px ui-monospace,Menlo,Consolas,monospace}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+.btn{display:inline-block;border-radius:12px;padding:12px 18px;font-weight:700;text-decoration:none;border:1px solid var(--line);color:var(--fg);background:var(--card)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.note{color:var(--muted);font-size:.85rem}
+</style>
+</head>
+<body>
+<main>
+<h1>downloads-toolkit</h1>
+<p class="sub">three python scripts that clean up a messy Downloads folder. every move is logged and can be undone. none of them delete anything.</p>
+
+<div class="card">
+<h2>organize_downloads.py</h2>
+<p>sorts loose files into folders by type. leaves project files like package.json and Dockerfile alone.</p>
+<pre>python organize_downloads.py          # preview
+python organize_downloads.py --run    # move files
+python organize_downloads.py --undo   # undo the last run</pre>
+</div>
+
+<div class="card">
+<h2>find_duplicates.py</h2>
+<p>finds exact copies by comparing file contents (SHA-256), not names, and moves the extra copies into a Duplicates folder.</p>
+<pre>python find_duplicates.py             # preview
+python find_duplicates.py --run       # move duplicates
+python find_duplicates.py --undo      # put them back</pre>
+</div>
+
+<div class="card">
+<h2>downloads_report.py</h2>
+<p>shows where the space went, and moves installers older than 30 days into a Review folder.</p>
+<pre>python downloads_report.py            # report only
+python downloads_report.py --run      # move old installers
+python downloads_report.py --undo     # put them back</pre>
+</div>
+
+<div class="row">
+<a class="btn pri" href="https://github.com/alvinaayaz/downloads-toolkit">view on GitHub</a>
+<a class="btn" href="https://alvinaayaz.github.io/downloads-toolkit/">try the browser duplicate finder</a>
+</div>
+<p class="note">built with AI's help. tested on Windows 10 with Python 3.12. read the preview before using --run.</p>
+</main>
+</body>
+</html>
